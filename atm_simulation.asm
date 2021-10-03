@@ -1,8 +1,14 @@
 ASSUME CS: CODE, DS: DATA
 
 DATA SEGMENT
+    ;Account number
+    ACC_PROMPT DB 0AH, "Enter your account number: $"
+    ACC_WRONG DB 0AH, 0DH, "Account number does not exist$"
+    ACC_NUM DB "0123456789$"
+    ACC_LEN DW 0AH
+    
     ;Password data
-    PWD_PROMPT DB 0AH, "Enter your password: $"
+    PWD_PROMPT DB 0AH, 0DH, "Enter your password: $"
     PWD_WRONG DB 0AH, 0DH, "Invalid password$"
     PWD DB "test1234$"
     PWD_LEN DW 08H
@@ -52,9 +58,32 @@ CODE SEGMENT
     MOV AX, DATA
     MOV DS, AX
     
+    ;Check account number
+    MOV SI, OFFSET ACC_NUM ;Store offset of existing account number in SI
+    MOV CX, ACC_LEN ;Loop ACC_LEN times as account number is ACC_LEN characters long
+    
+    MOV AH, 09H
+    LEA DX, ACC_PROMPT
+    INT 21H
+    
+    CHECK_ACC: MOV AH, 01H
+               INT 21H
+               
+               CMP AL, [SI] ;Compare with actual account number
+               LEA DX, ACC_WRONG
+               JNE WRONG
+               
+               INC SI
+               LOOP CHECK_ACC
+    
+    MOV AH, 0H
+    INT 16H
+    XOR SI, SI
+    XOR CX, CX
+    
     ;Check password
     MOV SI, OFFSET PWD ;Store offset of correct password in SI
-    MOV CX, PWD_LEN ;Loop PWD_LEN times as password is PWD_LEN characters long.
+    MOV CX, PWD_LEN ;Loop PWD_LEN times as password is PWD_LEN characters long
     
     MOV AH, 09H
     LEA DX, PWD_PROMPT
@@ -64,6 +93,7 @@ CODE SEGMENT
                 INT 21H
                 
                 CMP AL, [SI] ;Compare with actual password
+                LEA DX, PWD_WRONG
                 JNE WRONG
                 
                 MOV AH, 02H 
@@ -79,7 +109,6 @@ CODE SEGMENT
          
     ;Incorrect password handling
     WRONG: MOV AH, 09H
-           LEA DX, PWD_WRONG
            INT 21H
            
            MOV AH, 4CH
