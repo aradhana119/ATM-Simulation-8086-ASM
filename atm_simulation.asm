@@ -16,15 +16,15 @@ DATA SEGMENT
     ENTERED_PWD_LEN DW 0H
        
     ;Menu options
-    WEL_MSG DB 0AH, 0AH, 0DH, " Welcome to your account$"
-    BAL_MENU DB 0AH, 0DH, " 1. Check your balance$"
+    WEL_MSG DB 0AH, 0AH, 0AH, 0DH, "**************************  Welcome to your account  ***************************$"
+    BAL_MENU DB 0AH, 0AH, 0DH, " 1. Check your balance$"
     WITH_MENU DB 0AH, 0DH, " 2. Withdraw money$"
     DEP_MENU DB 0AH, 0DH, " 3. Deposit money$"
     CHANGE_PWD_MENU DB 0AH, 0DH, " 4. Change password$"
     EXIT_MENU DB 0AH, 0DH, " 5. Exit$"
     
     ;Messages
-    THANK DB 0AH, 0AH, 0DH, " Thank you for banking with us!$"
+    THANK DB 0AH, 0AH, 0AH, 0DH, "                          Thank you for banking with us!$"
     INVALID DB 0AH, 0AH, 0DH, " Invalid input. Please choose a different option.$"
     CHOOSE DB 0AH, 0AH, 0DH, " Enter option: $"
     SUCCESS DB 0AH, 0AH, 0DH, " Transaction successful$"
@@ -359,7 +359,7 @@ CODE SEGMENT
                  MOV [SI], AL
                                   
                  MOV AH, 02H 
-                 MOV DL, 2AH
+                 MOV DL, 23H
                  INT 21H
                       
                  INC SI
@@ -592,7 +592,7 @@ CODE SEGMENT
                     SET_PWD_FLAG: MOV BL, 01H
                        
                     CONTP: MOV AH, 02H 
-                           MOV DL, 2AH ;Hide password characters with *.
+                           MOV DL, 23H ;Hide password characters with *.
                            INT 21H
                       
                     INC SI
