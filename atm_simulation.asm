@@ -3,15 +3,19 @@ ASSUME CS: CODE, DS: DATA
 DATA SEGMENT
     ;Account number
     ACC_PROMPT DB 0AH, "Enter your account number: $"
-    ACC_WRONG DB 0AH, 0DH, "Account number does not exist$"
+    ACC_WRONG DB 0AH, 0DH, "Account number does not exist.$"
     ACC_NUM DB "0123456789$"
-    ACC_LEN DW 0AH
+    ACC_LEN DW $-(OFFSET ACC_NUM)-1
+    ENTERED_ACC_LEN DW 0H
+    ACC_FLAG DB 0H
     
     ;Password data
     PWD_PROMPT DB 0AH, 0DH, "Enter your password: $"
     PWD_WRONG DB 0AH, 0DH, "Invalid password$"
     PWD DB "test1234$"
-    PWD_LEN DW 08H
+    PWD_LEN DW $-(OFFSET PWD)-1
+    ENTERED_PWD_LEN DW 0H
+    PWD_FLAG DB 0H
         
     ;Menu options
     WEL_MSG DB 0AH, 0AH, 0DH, "Welcome to your account$"
@@ -52,7 +56,8 @@ DATA SEGMENT
     T DB 10
     
     DATA ENDS
-
+     
+     
 CODE SEGMENT
     START:
     MOV AX, DATA
@@ -66,48 +71,79 @@ CODE SEGMENT
     LEA DX, ACC_PROMPT
     INT 21H
     
-    CHECK_ACC: MOV AH, 01H
-               INT 21H
+    VERIFY_ACC: MOV AH, 01H
+                INT 21H
+                    
+                CMP AL, 0DH
+                JE BREAKA
+                    
+                INC ENTERED_ACC_LEN
+                CMP AL, [SI] ;Compare with actual account number
+                JNE SET_ACC_FLAG
+                JMP CONTA
+                             
+                SET_ACC_FLAG: MOV ACC_FLAG, 01H 
+                             
+                CONTA: INC SI
+                JMP VERIFY_ACC
+                    
+    BREAKA: CMP CX, ENTERED_ACC_LEN
+            JL ACC_FAIL
+            JG ACC_FAIL
                
-               CMP AL, [SI] ;Compare with actual account number
-               LEA DX, ACC_WRONG
-               JNE WRONG
-               
-               INC SI
-               LOOP CHECK_ACC
+            CMP ACC_FLAG, 01H
+            JE ACC_FAIL
+            JNE RETURNA
+        
+    ACC_FAIL: LEA DX, ACC_WRONG
+              JMP WRONG 
+                                   
+    RETURNA:
     
-    MOV AH, 0H
-    INT 16H
-    XOR SI, SI
-    XOR CX, CX
     
     ;Check password
     MOV SI, OFFSET PWD ;Store offset of correct password in SI
-    MOV CX, PWD_LEN ;Loop PWD_LEN times as password is PWD_LEN characters long
+    MOV CX, PWD_LEN ;Length of entered password has to be compard with actual password length.
     
     MOV AH, 09H
     LEA DX, PWD_PROMPT
     INT 21H
     
-    CHECK_PASS: MOV AH, 08H ;Character input without echo to output device
+    VERIFY_PWD: MOV AH, 08H ;Character input without echo to output device.
                 INT 21H
-                
-                CMP AL, [SI] ;Compare with actual password
-                LEA DX, PWD_WRONG
-                JNE WRONG
-                
-                MOV AH, 02H 
-                MOV DL, 2AH ;Hide password characters with *
-                INT 21H
-                
+                                
+                CMP AL, 0DH ;Break if user presses enter key.
+                JE BREAKP
+                    
+                INC ENTERED_PWD_LEN
+                CMP AL, [SI] ;Compare with actual password.
+                JNE SET_PWD_FLAG
+                JE CONTP
+                       
+                SET_PWD_FLAG: MOV PWD_FLAG, 01H
+                   
+                CONTP: MOV AH, 02H 
+                       MOV DL, 2AH ;Hide password characters with *.
+                       INT 21H
+                  
                 INC SI
-                LOOP CHECK_PASS
-                
-    MOV AH, 0H ;To check for a keystroke before redirecting to menu
-    INT 16H
-    JMP MENU
+                JMP VERIFY_PWD
+                      
+    BREAKP: CMP CX, ENTERED_PWD_LEN
+            JL PWD_FAIL
+            JG PWD_FAIL
+               
+            CMP PWD_FLAG, 01H
+            JE PWD_FAIL
+            JNE RETURNP
+        
+    PWD_FAIL: LEA DX, PWD_WRONG
+              JMP WRONG 
+                                   
+    RETURNP: JMP MENU
+          
          
-    ;Incorrect password handling
+    ;Incorrect verification handling
     WRONG: MOV AH, 09H
            INT 21H
            
@@ -158,7 +194,7 @@ CODE SEGMENT
                       
                         
     ;Display the current balance
-    BALANCE: MOV AH, 0H
+    BALANCE: MOV AH, 0H ;To check for a keystroke.
              INT 16H
              
              MOV AH, 09H
@@ -495,6 +531,7 @@ CODE SEGMENT
         CALL DISPLAY_NUM
         
         RET
-                                            
+       
+                                       
     CODE ENDS
 END START
