@@ -2,51 +2,56 @@ ASSUME CS: CODE, DS: DATA
 
 DATA SEGMENT
     ;Account number
-    ACC_PROMPT DB 0AH, "Enter your account number: $"
-    ACC_WRONG DB 0AH, 0DH, "Account number does not exist.$"
+    ACC_PROMPT DB 0AH, " Enter your account number: $"
+    ACC_WRONG DB 0AH, 0AH, 0DH, " Account number does not exist.$"
     ACC_NUM DB "0123456789$"
     ACC_LEN DW $-(OFFSET ACC_NUM)-1
     ENTERED_ACC_LEN DW 0H
-    ACC_FLAG DB 0H
     
     ;Password data
-    PWD_PROMPT DB 0AH, 0DH, "Enter your password: $"
-    PWD_WRONG DB 0AH, 0DH, "Invalid password$"
+    PWD_PROMPT DB 0AH, 0DH, " Enter your password: $"
+    PWD_WRONG DB 0AH, 0AH, 0DH, " Invalid password$"
     PWD DB "test1234$"
     PWD_LEN DW $-(OFFSET PWD)-1
     ENTERED_PWD_LEN DW 0H
-    PWD_FLAG DB 0H
-        
+       
     ;Menu options
-    WEL_MSG DB 0AH, 0AH, 0DH, "Welcome to your account$"
-    BAL_MENU DB 0AH, 0DH, "1. Check your balance$"
-    WITH_MENU DB 0AH, 0DH, "2. Withdraw money$"
-    DEP_MENU DB 0AH, 0DH, "3. Deposit money$"
-    EXIT_MENU DB 0AH, 0DH, "4. Exit$"
+    WEL_MSG DB 0AH, 0AH, 0DH, " Welcome to your account$"
+    BAL_MENU DB 0AH, 0DH, " 1. Check your balance$"
+    WITH_MENU DB 0AH, 0DH, " 2. Withdraw money$"
+    DEP_MENU DB 0AH, 0DH, " 3. Deposit money$"
+    CHANGE_PWD_MENU DB 0AH, 0DH, " 4. Change password$"
+    EXIT_MENU DB 0AH, 0DH, " 5. Exit$"
     
     ;Messages
-    THANK DB 0AH, 0AH, 0DH, "Thank you for banking with us!$"
-    INVALID DB 0AH, 0AH, 0DH, "Invalid input. Please choose a different option.$"
-    CHOOSE DB 0AH, 0AH, 0DH, "Enter option: $"
-    SUCCESS DB 0AH, 0AH, 0DH, "Transaction successful$"
-    LIM_EXCEED DB 0AH, 0DH, "Limit exceeded (Maximum amount = Rs. 5000)$"
-        
+    THANK DB 0AH, 0AH, 0DH, " Thank you for banking with us!$"
+    INVALID DB 0AH, 0AH, 0DH, " Invalid input. Please choose a different option.$"
+    CHOOSE DB 0AH, 0AH, 0DH, " Enter option: $"
+    SUCCESS DB 0AH, 0AH, 0DH, " Transaction successful$"
+    LIM_EXCEED DB 0AH, 0AH, 0DH, " Limit exceeded (Maximum amount = Rs. 5000)$"
+       
     ;Balance
     CUR_BAL DW 20000
-    CUR_BAL_MSG DB 0AH, 0DH, "Current balance = Rs. $"
+    CUR_BAL_MSG DB 0AH, 0AH, 0DH, " Current balance = Rs. $"
     
     ;Withdraw
-    WITH_PROMPT DB 0AH, 0AH, 0DH, "Enter amount to withdraw: Rs. $"
+    WITH_PROMPT DB 0AH, 0AH, 0DH, " Enter amount to withdraw: Rs. $"
     WITH_AMT DW 0H 
-    BAL_LOW DB 0AH, 0DH, "Insufficient balance$"
+    BAL_LOW DB 0AH, 0AH, 0DH, " Insufficient balance$"
     
     ;Deposit
-    DEP_PROMPT DB 0AH, 0AH, 0DH, "Enter amount to deposit: Rs. $"
+    DEP_PROMPT DB 0AH, 0AH, 0DH, " Enter amount to deposit: Rs. $"
     DEP_AMT DW 0H
-        
+    
+    ;Change password
+    REENTER DB 0AH, 0AH, 0DH, " Re-enter your password: $"
+    NEW_PWD_PROMPT DB 0AH, 0DH, " Enter new password: $"
+    NEW_PWD DB 0AH, 0AH, 0DH, " Password has been changed to $"
+    RESTRICT DB 0AH, 0AH, 0DH, " Password restricted to 8 characters.$"
+            
     ;Amount options
-    ABOVE1000 DB 0AH, 0AH, 0DH, "1. Rs.1000 - Rs.5000$"
-    ABOVE100 DB 0AH, 0DH, "2. Rs.100 - Rs.999$" 
+    ABOVE1000 DB 0AH, 0AH, 0DH, " 1. Rs.1000 - Rs.5000$"
+    ABOVE100 DB 0AH, 0DH, " 2. Rs.100 - Rs.999$" 
     MAX_LIM DW 5000
     MIN_LIM DW 100
       
@@ -64,7 +69,7 @@ CODE SEGMENT
     MOV DS, AX
     
     ;Check account number
-    MOV SI, OFFSET ACC_NUM ;Store offset of existing account number in SI
+    LEA SI, ACC_NUM ;Store offset of existing account number in SI
     MOV CX, ACC_LEN ;Loop ACC_LEN times as account number is ACC_LEN characters long
     
     MOV AH, 09H
@@ -82,7 +87,7 @@ CODE SEGMENT
                 JNE SET_ACC_FLAG
                 JMP CONTA
                              
-                SET_ACC_FLAG: MOV ACC_FLAG, 01H 
+                SET_ACC_FLAG: MOV BL, 01H 
                              
                 CONTA: INC SI
                 JMP VERIFY_ACC
@@ -91,7 +96,7 @@ CODE SEGMENT
             JL ACC_FAIL
             JG ACC_FAIL
                
-            CMP ACC_FLAG, 01H
+            CMP BL, 01H
             JE ACC_FAIL
             JNE RETURNA
         
@@ -102,46 +107,13 @@ CODE SEGMENT
     
     
     ;Check password
-    MOV SI, OFFSET PWD ;Store offset of correct password in SI
-    MOV CX, PWD_LEN ;Length of entered password has to be compard with actual password length.
-    
     MOV AH, 09H
     LEA DX, PWD_PROMPT
     INT 21H
     
-    VERIFY_PWD: MOV AH, 08H ;Character input without echo to output device.
-                INT 21H
-                                
-                CMP AL, 0DH ;Break if user presses enter key.
-                JE BREAKP
-                    
-                INC ENTERED_PWD_LEN
-                CMP AL, [SI] ;Compare with actual password.
-                JNE SET_PWD_FLAG
-                JE CONTP
-                       
-                SET_PWD_FLAG: MOV PWD_FLAG, 01H
-                   
-                CONTP: MOV AH, 02H 
-                       MOV DL, 2AH ;Hide password characters with *.
-                       INT 21H
-                  
-                INC SI
-                JMP VERIFY_PWD
-                      
-    BREAKP: CMP CX, ENTERED_PWD_LEN
-            JL PWD_FAIL
-            JG PWD_FAIL
-               
-            CMP PWD_FLAG, 01H
-            JE PWD_FAIL
-            JNE RETURNP
-        
-    PWD_FAIL: LEA DX, PWD_WRONG
-              JMP WRONG 
-                                   
-    RETURNP: JMP MENU
-          
+    CALL CHECK_PWD
+    JMP MENU      
+    
          
     ;Incorrect verification handling
     WRONG: MOV AH, 09H
@@ -170,6 +142,10 @@ CODE SEGMENT
           INT 21H
           
           MOV AH, 09H
+          LEA DX, CHANGE_PWD_MENU
+          INT 21H
+          
+          MOV AH, 09H
           LEA DX, EXIT_MENU
           INT 21H
           
@@ -183,12 +159,19 @@ CODE SEGMENT
           ;Comparing with ASCII code of decimal numbers
           CMP AL, 49
           JE BALANCE
+          
           CMP AL, 50
           JE WITHDRAW
+          
           CMP AL, 51
           JE DEPOSIT
+          
           CMP AL, 52
+          JE CHANGE_PWD
+          
+          CMP AL, 53
           JE EXIT
+          
           JMP INP_ERROR
                     
                       
@@ -346,7 +329,62 @@ CODE SEGMENT
                   JMP BACK
                        
                        
-                       
+                   
+    ;Change password
+    CHANGE_PWD: MOV AH, 0H
+                INT 16H
+              
+                MOV AH, 09H
+                LEA DX, REENTER
+                INT 21H
+                
+                CALL CHECK_PWD
+                
+                MOV AH, 09H
+                LEA DX, NEW_PWD_PROMPT
+                INT 21H
+                
+                LEA SI, PWD
+                XOR BX, BX ;-----
+                                
+    CHANGE_LOOP: MOV AH, 08H
+                 INT 21H
+                 
+                 CMP AL, 0DH
+                 JE BREAKC
+                 
+                 INC BX ;-----
+                 CMP BX, 08H
+                 JG EXCEED
+                 MOV [SI], AL
+                                  
+                 MOV AH, 02H 
+                 MOV DL, 2AH
+                 INT 21H
+                      
+                 INC SI
+                 JMP CHANGE_LOOP
+                 
+    EXCEED: MOV AH, 09H
+            LEA DX, RESTRICT
+            INT 21H
+            DEC BX
+                
+    BREAKC: MOV [SI], "$"
+            MOV PWD_LEN, BX ;-----
+            
+            MOV AH, 09H
+            LEA DX, NEW_PWD
+            INT 21H                
+                              
+            MOV AH, 09H
+            LEA DX, PWD
+            INT 21H
+            
+            JMP BACK    
+               
+                    
+                      
     ;Exit the application                 
     EXIT: MOV AH, 0H
           INT 16H
@@ -531,7 +569,49 @@ CODE SEGMENT
         CALL DISPLAY_NUM
         
         RET
-       
+        
+    
+    ;Procedure to verify password
+    CHECK_PWD PROC NEAR
+        MOV ENTERED_PWD_LEN, 0H
+        MOV BL, 0H ;Flag stored in BL
+        LEA SI, PWD ;Store offset of correct password in SI
+        MOV CX, PWD_LEN ;Length of entered password has to be compard with actual password length.
+        
+        VERIFY_PWD: MOV AH, 08H ;Character input without echo to output device.
+                    INT 21H
+                                
+                    CMP AL, 0DH ;Break if user presses enter key.
+                    JE BREAKP
+                        
+                    INC ENTERED_PWD_LEN
+                    CMP AL, [SI] ;Compare with actual password.
+                    JNE SET_PWD_FLAG
+                    JE CONTP
+                           
+                    SET_PWD_FLAG: MOV BL, 01H
+                       
+                    CONTP: MOV AH, 02H 
+                           MOV DL, 2AH ;Hide password characters with *.
+                           INT 21H
+                      
+                    INC SI
+                    JMP VERIFY_PWD
+                          
+        BREAKP: CMP CX, ENTERED_PWD_LEN
+                JL PWD_FAIL
+                JG PWD_FAIL
+                   
+                CMP BL, 01H
+                JE PWD_FAIL
+                JNE RETURNP
+            
+        PWD_FAIL: LEA DX, PWD_WRONG
+                  JMP WRONG 
+                                       
+        RETURNP: RET
+    ENDP
+        
                                        
     CODE ENDS
 END START
