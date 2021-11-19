@@ -345,7 +345,7 @@ CODE SEGMENT
                 INT 21H
                 
                 LEA SI, PWD
-                XOR BX, BX ;-----
+                XOR BX, BX
                                 
     CHANGE_LOOP: MOV AH, 08H
                  INT 21H
@@ -353,7 +353,7 @@ CODE SEGMENT
                  CMP AL, 0DH
                  JE BREAKC
                  
-                 INC BX ;-----
+                 INC BX
                  CMP BX, 08H
                  JG EXCEED
                  MOV [SI], AL
@@ -371,7 +371,7 @@ CODE SEGMENT
             DEC BX
                 
     BREAKC: MOV [SI], "$"
-            MOV PWD_LEN, BX ;-----
+            MOV PWD_LEN, BX
             
             MOV AH, 09H
             LEA DX, NEW_PWD
